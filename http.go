@@ -877,10 +877,6 @@ func (req *Request) readLimitBody(r *bufio.Reader, maxBodySize int, getOnly bool
 		return errGetOnly
 	}
 
-	if req.Header.noBody() {
-		return nil
-	}
-
 	if req.MayContinue() {
 		// 'Expect: 100-continue' header found. Let the caller deciding
 		// whether to read request body or
@@ -1105,18 +1101,13 @@ func (req *Request) Write(w *bufio.Writer) error {
 		req.Header.SetMultipartFormBoundary(req.multipartFormBoundary)
 	}
 
-	hasBody := !req.Header.noBody()
-	if hasBody {
-		req.Header.SetContentLength(len(body))
-	}
+	req.Header.SetContentLength(len(body))
 	if err = req.Header.Write(w); err != nil {
 		return err
 	}
-	if hasBody {
-		_, err = w.Write(body)
-	} else if len(body) > 0 {
-		return fmt.Errorf("non-zero body for non-POST request. body=%q", body)
-	}
+
+	_, err = w.Write(body)
+
 	return err
 }
 

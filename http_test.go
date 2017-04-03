@@ -568,19 +568,14 @@ func TestResponseSkipBody(t *testing.T) {
 func TestRequestNoContentLength(t *testing.T) {
 	var r Request
 
-	r.Header.SetMethod("HEAD")
 	r.Header.SetHost("foobar")
-
-	s := r.String()
-	if strings.Contains(s, "Content-Length: ") {
-		t.Fatalf("unexpected content-length in HEAD request %q", s)
-	}
-
 	r.Header.SetMethod("POST")
+	s := r.String()
+
 	fmt.Fprintf(r.BodyWriter(), "foobar body")
-	s = r.String()
-	if !strings.Contains(s, "Content-Length: ") {
-		t.Fatalf("missing content-length header in non-GET request %q", s)
+
+	if strings.Contains(s, "Content-Length: ") {
+		t.Fatalf("found content-length header in request with no message body %q", s)
 	}
 }
 
@@ -1224,6 +1219,9 @@ func TestRequestSuccess(t *testing.T) {
 	// non-empty user-agent
 	testRequestSuccess(t, "GET", "/foo/bar", "google.com", "MSIE", "", "GET")
 
+	// get with body
+	testRequestSuccess(t, "GET", "/foo/bar", "google.com", "MSIE", "get body", "GET")
+
 	// non-empty method
 	testRequestSuccess(t, "HEAD", "/aaa", "fobar", "", "", "HEAD")
 
@@ -1302,9 +1300,6 @@ func testResponseSuccess(t *testing.T, statusCode int, contentType, serverName, 
 func TestRequestWriteError(t *testing.T) {
 	// no host
 	testRequestWriteError(t, "", "/foo/bar", "", "", "")
-
-	// get with body
-	testRequestWriteError(t, "GET", "/foo/bar", "aaa.com", "", "foobar")
 }
 
 func testRequestWriteError(t *testing.T, method, requestURI, host, userAgent, body string) {
